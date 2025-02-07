@@ -1,0 +1,65 @@
+using Newtonsoft.Json;
+using System.Text.RegularExpressions;
+
+class CssClass
+{
+    public static void Main(string[] args)
+    {
+        string originalCssPath = "original.css";
+        string obfuscatedCssPath = "obfuscated.css";
+        string jsonFilePath = "classMapping.json";
+
+        string originalCss = File.ReadAllText(originalCssPath);
+        string obfuscatedCss = File.ReadAllText(obfuscatedCssPath);
+
+        var originalClasses = ExtractClasses(originalCss);
+        var obfuscatedClasses = ExtractClasses(obfuscatedCss);
+
+        var classMapping = new Dictionary<string, string>();
+
+        if (File.Exists(jsonFilePath))
+        {
+            classMapping = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(jsonFilePath));
+        }
+
+        foreach (var originalClass in originalClasses)
+        {
+            foreach (var obfuscatedClass in obfuscatedClasses)
+            {
+                if (originalClass.Value == obfuscatedClass.Value)
+                {
+                    if (!classMapping.ContainsKey(obfuscatedClass.Key))
+                    {
+                        classMapping[obfuscatedClass.Key] = originalClass.Key;
+                    }
+
+                    if (!classMapping.ContainsKey(originalClass.Key))
+                    {
+                        classMapping[originalClass.Key] = obfuscatedClass.Key;
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        string jsonResult = JsonConvert.SerializeObject(classMapping, Formatting.Indented);
+        File.WriteAllText(jsonFilePath, jsonResult);
+    }
+
+    private static Dictionary<string, string> ExtractClasses(string cssContent)
+    {
+        var classDictionary = new Dictionary<string, string>();
+        string pattern = @"\.([a-zA-Z0-9\-\:\[\]\(\)\\,.]+)\s*\{([^\}]*)\}";
+        var matches = Regex.Matches(cssContent, pattern);
+
+        foreach (Match match in matches)
+        {
+            string className = match.Groups[1].Value;
+            string classContent = match.Groups[2].Value.Trim();
+            classDictionary[className] = classContent;
+        }
+
+        return classDictionary;
+    }
+}
