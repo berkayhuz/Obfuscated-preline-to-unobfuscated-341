@@ -1,4 +1,3 @@
-// JSON verisi
 const jsonData = {
     "container": "a8zzl",
     "aspect-h-1": "w2vmo",
